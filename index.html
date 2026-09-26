@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#0d6b4f" />
+    <meta name="robots" content="index, follow" />
+    <meta name="description" content="ZamFault helps communities in Zambia report and track roads, water, power, and waste issues from their phone or browser." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta property="og:title" content="ZamFault" />
+    <meta property="og:description" content="Report and track civic issues in Zambia with ZamFault." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://zamfault.app/icon.svg" />
+    <meta property="og:url" content="https://zamfault.app/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="canonical" content="https://zamfault.app/" />
+    <title>ZamFault | Report Community Faults</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="stage">
+      <div class="phone">
+        <div class="status-bar">
+          <span class="time" id="clock">9:41</span>
+          <span class="notch"></span>
+          <span class="sys-icons">
+            <svg viewBox="0 0 18 12" width="16" height="11" aria-hidden="true">
+              <rect x="0" y="8" width="3" height="4" rx="0.6" fill="currentColor" />
+              <rect x="5" y="5" width="3" height="7" rx="0.6" fill="currentColor" />
+              <rect x="10" y="2" width="3" height="10" rx="0.6" fill="currentColor" />
+              <rect x="15" y="0" width="3" height="12" rx="0.6" fill="currentColor" opacity="0.35" />
+            </svg>
+            <svg viewBox="0 0 16 12" width="15" height="11" aria-hidden="true">
+              <path
+                d="M8 10.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Zm5.3-3.1a7.4 7.4 0 0 0-10.6 0l1.2 1.2a5.7 5.7 0 0 1 8.2 0l1.2-1.2Zm2.5-2.5A11 11 0 0 0 .2 4.9L1.4 6a9.4 9.4 0 0 1 13.2 0l1.2-1.1Z"
+                fill="currentColor"
+              />
+            </svg>
+            <svg viewBox="0 0 27 12" width="25" height="12" aria-hidden="true">
+              <rect x="0.6" y="0.6" width="22" height="10.8" rx="2.4" stroke="currentColor" fill="none" />
+              <rect x="2.2" y="2.2" width="17" height="7.6" rx="1.2" fill="currentColor" />
+              <rect x="23.5" y="3.6" width="2.2" height="4.8" rx="0.8" fill="currentColor" />
+            </svg>
+          </span>
+        </div>
+        <main id="app" class="app"></main>
+      </div>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
