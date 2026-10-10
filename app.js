@@ -555,15 +555,70 @@ function bind() {
   });
 
   document.getElementById("profile-photo")?.addEventListener("change", (event) => {
-    const upload = event.target.files?.[0];
+    const input = event.currentTarget;
+    const upload = input.files?.[0];
     if (!upload) return;
+
+    const user = currentUser();
+    if (!user) {
+      showError("Please log in before updating your profile picture.");
+      input.value = "";
+      return;
+    }
+
+    if (!upload.type.startsWith("image/")) {
+      showError("Please choose an image file.");
+      input.value = "";
+      return;
+    }
+    if (upload.size > 10 * 1024 * 1024) {
+      showError("Choose an image smaller than 10 MB.");
+      input.value = "";
+      return;
+    }
+
     const reader = new FileReader();
+    reader.onerror = () => {
+      showError("The image could not be read. Please try another picture.");
+      input.value = "";
+    };
     reader.onload = () => {
-      const user = currentUser();
-      if (!user) return;
-      user.photo = reader.result;
-      saveState(state);
-      render();
+      const image = new Image();
+      image.onerror = () => {
+        showError("That picture could not be opened. Please choose another image.");
+        input.value = "";
+      };
+      image.onload = () => {
+        // Resize and compress photos before storing them to reduce localStorage quota errors.
+        const maxSide = 480;
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          showError("Your browser could not process this picture. Please try another browser.");
+          input.value = "";
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const compressedPhoto = canvas.toDataURL("image/jpeg", 0.78);
+        const previousPhoto = user.photo || "";
+
+        try {
+          user.photo = compressedPhoto;
+          saveState(state);
+          render();
+        } catch (error) {
+          user.photo = previousPhoto;
+          console.error("ZamFault profile picture save failed:", error);
+          showError("The picture could not be saved on this device. Try a smaller image or clear some browser storage.");
+        } finally {
+          input.value = "";
+        }
+      };
+      image.src = reader.result;
     };
     reader.readAsDataURL(upload);
   });
