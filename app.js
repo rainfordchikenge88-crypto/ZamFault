@@ -468,40 +468,62 @@ function bind() {
 
   document.getElementById("submit-report")?.addEventListener("click", (event) => {
     const button = event.currentTarget;
+    const resultBox = document.getElementById("submit-result");
+    const draft = state.draft;
+
+    if (!draft || !(draft.chosenType || draft.type) || !draft.description?.trim() || !draft.location?.trim()) {
+      if (resultBox) resultBox.innerHTML = '<div class="toast-error">Please select a fault type and provide its location and description.</div>';
+      return;
+    }
+
     button.disabled = true;
-    button.innerHTML = `<span class="spinner"></span> Submitting`;
-    setTimeout(() => {
-      state.lastId += 1;
-      const id = `ZF-${String(state.lastId).padStart(4, "0")}`;
-      const draft = state.draft;
-      state.reports.unshift({
-        id,
-        type: draft.chosenType || draft.type,
-        category: draft.category,
-        severity: draft.severity,
-        description: draft.description,
-        location: draft.location,
-        lat: 18 + Math.random() * 55,
-        lng: 20 + Math.random() * 58,
-        status: "Reported",
-        createdAt: Date.now(),
-        owner: true,
-        evidence: draft.evidence,
-      });
-      state.notifications.unshift({
-        id: `n${Date.now()}`,
-        title: "Report submitted",
-        body: `Your report ${id} was received.`,
-        when: "now",
-        group: "Today",
-      });
-      const resultBox = document.getElementById("submit-result");
-      if (resultBox) resultBox.innerHTML = `<div class="toast-ok"><b>Report submitted</b><div>Report ID: ${id}</div></div>`;
-      state.draft = emptyDraft();
-      saveState(state);
+    button.innerHTML = '<span class="spinner"></span> Submitting';
+
+    // Use the captured GPS coordinates when available; never invent a map location.
+    const coords = draft.coords || {};
+    const reportId = `ZF-${String((state.lastId || 142) + 1).padStart(4, "0")}`;
+    const report = {
+      id: reportId,
+      type: draft.chosenType || draft.type,
+      category: draft.category,
+      severity: draft.severity,
+      description: draft.description.trim(),
+      location: draft.location.trim(),
+      lat: Number.isFinite(coords.lat) ? coords.lat : null,
+      lng: Number.isFinite(coords.lng) ? coords.lng : null,
+      status: "Reported",
+      createdAt: Date.now(),
+      owner: true,
+      evidence: draft.evidence || "",
+    };
+
+    try {
+      const nextState = {
+        ...state,
+        lastId: (state.lastId || 142) + 1,
+        reports: [report, ...(state.reports || [])],
+        notifications: [{
+          id: `n${Date.now()}`,
+          title: "Report submitted",
+          body: `Your report ${reportId} was saved on this device.`,
+          when: "now",
+          group: "Today",
+        }, ...(state.notifications || [])],
+        draft: emptyDraft(),
+      };
+
+      // Persist before showing success, so storage failures cannot leave a false success.
+      saveState(nextState);
+      state = nextState;
+      if (resultBox) resultBox.innerHTML = `<div class="toast-ok"><b>Report submitted</b><div>Report ID: ${reportId}</div><div>Saved on this device.</div></div>`;
       button.textContent = "Submitted";
       setTimeout(() => navigate("home"), 1200);
-    }, 700);
+    } catch (error) {
+      console.error("ZamFault report submission failed:", error);
+      button.disabled = false;
+      button.textContent = "Try Again";
+      if (resultBox) resultBox.innerHTML = '<div class="toast-error">Could not save this report on this device. Your report has not been submitted. Try a smaller photo or clear browser storage, then try again.</div>';
+    }
   });
 
   app.querySelectorAll("[data-filter]").forEach((button) => {
