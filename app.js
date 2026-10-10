@@ -47,6 +47,47 @@ function saveState(state) {
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
 }
 
+const EVIDENCE_DB = "zamfault-evidence";
+const EVIDENCE_STORE = "files";
+
+function openEvidenceDb() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("This browser does not support local video storage."));
+      return;
+    }
+    const request = indexedDB.open(EVIDENCE_DB, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(EVIDENCE_STORE)) {
+        db.createObjectStore(EVIDENCE_STORE);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("Could not open video storage."));
+  });
+}
+
+async function saveEvidenceFile(id, file) {
+  const db = await openEvidenceDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(EVIDENCE_STORE, "readwrite");
+    transaction.objectStore(EVIDENCE_STORE).put(file, id);
+    transaction.oncomplete = () => { db.close(); resolve(); };
+    transaction.onerror = () => { db.close(); reject(transaction.error || new Error("Could not save the video.")); };
+    transaction.onabort = () => { db.close(); reject(transaction.error || new Error("Video saving was cancelled.")); };
+  });
+}
+
+function evidencePreview(evidence) {
+  if (!evidence) return "";
+  if (evidence.startsWith("video-id:")) {
+    return `<div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:90px;padding:12px;background:#eef3f0;border-radius:12px;color:#176b48"><span style="font-size:24px">▶</span><b>Video attached</b></div>`;
+  }
+  return `<img src="${evidence}" alt="Evidence" />`;
+}
+
+
 function emptyDraft() {
   return {
     category: "Roads",
@@ -213,19 +254,19 @@ const routes = {
   },
   report() {
     const d = state.draft;
-    return `<section class="screen has-tabs"><div class="content pad"><div class="nav-row"><button class="back" data-go="home">‹</button><h1 class="title">Report a fault</h1></div><p class="sub" style="margin-top:12px;margin-bottom:8px;font-weight:600;color:#111">Fault type</p><div class="chips" id="cats">${CATEGORIES.map((c) => `<button type="button" class="chip ${d.category === c.id ? "on" : ""}" data-cat="${c.id}">${c.label}</button>`).join("")}</div><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Evidence</p><label class="evidence ${d.evidence ? "has" : ""}" id="evidence-box">${d.evidence ? `<img src="${d.evidence}" alt="Evidence" />` : `${icon("cam", 26)}<div style="margin-top:8px">Take or upload a photo or video</div>`}<input id="evidence-input" type="file" accept="image/*,video/*" hidden /></label><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Location</p><div class="loc"><span style="color:var(--green)">${icon("pin", 20)}</span><div style="flex:1"><b style="font-size:13px">${d.location ? escapeHtml(d.location) : "Location found by GPS"}</b><div class="muted" style="font-size:12px">Tap to adjust on the map</div></div><button class="link" id="gps-btn" type="button" style="background:none;border:0">Locate</button></div><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Description</p><textarea id="desc" placeholder="Describe the fault">${escapeHtml(d.description)}</textarea><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Severity</p><div class="sev" id="sev">${["Low", "Medium", "High"].map((s) => `<button type="button" class="chip ${d.severity === s ? "on" : ""}" data-sev="${s}">${s}</button>`).join("")}</div><p class="error hidden" id="form-error" style="margin-top:10px"></p><div style="height:16px"></div><button class="btn btn-primary" id="continue-report">Continue</button></div>${tabBar("report")}</section>`;
+    return `<section class="screen has-tabs"><div class="content pad"><div class="nav-row"><button class="back" data-go="home">‹</button><h1 class="title">Report a fault</h1></div><p class="sub" style="margin-top:12px;margin-bottom:8px;font-weight:600;color:#111">Fault type</p><div class="chips" id="cats">${CATEGORIES.map((c) => `<button type="button" class="chip ${d.category === c.id ? "on" : ""}" data-cat="${c.id}">${c.label}</button>`).join("")}</div><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Evidence</p><label class="evidence ${d.evidence ? "has" : ""}" id="evidence-box">${d.evidence ? evidencePreview(d.evidence) : `${icon("cam", 26)}<div style="margin-top:8px">Take or upload a photo or video</div>`}<input id="evidence-input" type="file" accept="image/*,video/*" hidden /></label><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Location</p><div class="loc"><span style="color:var(--green)">${icon("pin", 20)}</span><div style="flex:1"><b style="font-size:13px">${d.location ? escapeHtml(d.location) : "Location found by GPS"}</b><div class="muted" style="font-size:12px">Tap to adjust on the map</div></div><button class="link" id="gps-btn" type="button" style="background:none;border:0">Locate</button></div><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Description</p><textarea id="desc" placeholder="Describe the fault">${escapeHtml(d.description)}</textarea><p class="sub" style="margin:16px 0 8px;font-weight:600;color:#111">Severity</p><div class="sev" id="sev">${["Low", "Medium", "High"].map((s) => `<button type="button" class="chip ${d.severity === s ? "on" : ""}" data-sev="${s}">${s}</button>`).join("")}</div><p class="error hidden" id="form-error" style="margin-top:10px"></p><div style="height:16px"></div><button class="btn btn-primary" id="continue-report">Continue</button></div>${tabBar("report")}</section>`;
   },
   detect() {
     const d = state.draft;
     const detected = d.detected || { type: guessType(d), conf: 84 };
     const selected = d.type || detected.type;
     const match = selected.toLowerCase() === detected.type.toLowerCase();
-    return `<section class="screen pad"><div class="nav-row"><button class="back" data-go="report">‹</button><h1 class="title">Automatic detection</h1></div><div class="detect-frame corners">${d.evidence ? `<img src="${d.evidence}" alt="Evidence" />` : `<div class="blank"></div>`}<div class="scan-line"></div><span></span></div><div class="analyze"><div class="muted" style="font-size:12px">You selected</div><b>${escapeHtml(selected)}</b><div class="muted" style="font-size:12px;margin-top:8px">Detected</div><b>${escapeHtml(detected.type)} · ${detected.conf}%</b></div>${match ? `<div class="match">✓ Matches your selection</div>` : `<div class="mismatch"><b>Different fault type detected</b><div style="margin-top:4px">Detected ${escapeHtml(detected.type)}. You can choose which to keep.</div><div class="row-btns"><button class="btn btn-ghost" id="keep-mine">Keep mine</button><button class="btn btn-primary" id="use-detected">Use detected</button></div></div>`}<div class="grow"></div><button class="btn btn-primary" data-go="review">Continue</button></section>`;
+    return `<section class="screen pad"><div class="nav-row"><button class="back" data-go="report">‹</button><h1 class="title">Automatic detection</h1></div><div class="detect-frame corners">${d.evidence ? evidencePreview(d.evidence) : `<div class="blank"></div>`}<div class="scan-line"></div><span></span></div><div class="analyze"><div class="muted" style="font-size:12px">You selected</div><b>${escapeHtml(selected)}</b><div class="muted" style="font-size:12px;margin-top:8px">Detected</div><b>${escapeHtml(detected.type)} · ${detected.conf}%</b></div>${match ? `<div class="match">✓ Matches your selection</div>` : `<div class="mismatch"><b>Different fault type detected</b><div style="margin-top:4px">Detected ${escapeHtml(detected.type)}. You can choose which to keep.</div><div class="row-btns"><button class="btn btn-ghost" id="keep-mine">Keep mine</button><button class="btn btn-primary" id="use-detected">Use detected</button></div></div>`}<div class="grow"></div><button class="btn btn-primary" data-go="review">Continue</button></section>`;
   },
   review() {
     const d = state.draft;
     const type = d.chosenType || d.type || guessType(d);
-    return `<section class="screen pad"><div class="nav-row"><button class="back" data-go="detect">‹</button><h1 class="title">Review and submit</h1></div><div class="review-card">${d.evidence ? `<img src="${d.evidence}" alt="" />` : `<div class="photo-ph">${icon("cam", 28)}</div>`}<div class="kv"><div><span>Type</span><b>${escapeHtml(type)}</b></div><div><span>Category</span><b>${escapeHtml(d.category)}</b></div><div><span>Location</span><b>${escapeHtml(d.location || "Pinned on the map")}</b></div><div><span>Severity</span><b>${escapeHtml(d.severity)}</b></div><div><span>Description</span><b>${escapeHtml(d.description || "—")}</b></div></div></div><button class="btn btn-primary" id="submit-report">Submit report</button><div id="submit-result"></div></section>`;
+    return `<section class="screen pad"><div class="nav-row"><button class="back" data-go="detect">‹</button><h1 class="title">Review and submit</h1></div><div class="review-card">${d.evidence ? evidencePreview(d.evidence) : `<div class="photo-ph">${icon("cam", 28)}</div>`}<div class="kv"><div><span>Type</span><b>${escapeHtml(type)}</b></div><div><span>Category</span><b>${escapeHtml(d.category)}</b></div><div><span>Location</span><b>${escapeHtml(d.location || "Pinned on the map")}</b></div><div><span>Severity</span><b>${escapeHtml(d.severity)}</b></div><div><span>Description</span><b>${escapeHtml(d.description || "—")}</b></div></div></div><button class="btn btn-primary" id="submit-report">Submit report</button><div id="submit-result"></div></section>`;
   },
   reports() {
     const filter = state.uiFilter || "All";
@@ -402,14 +443,82 @@ function bind() {
 
   const evidenceInput = document.getElementById("evidence-input");
   if (evidenceInput) {
-    evidenceInput.addEventListener("change", () => {
+    evidenceInput.addEventListener("change", async () => {
       const upload = evidenceInput.files?.[0];
       if (!upload) return;
+
+      const isVideo = upload.type.startsWith("video/");
+      const isImage = upload.type.startsWith("image/");
+      if (!isVideo && !isImage) {
+        showError("Choose a photo or video file.");
+        evidenceInput.value = "";
+        return;
+      }
+      // Videos are stored in IndexedDB, not localStorage, so they do not make
+      // the report state too large and leave the Submit button stuck.
+      if (isVideo && upload.size > 100 * 1024 * 1024) {
+        showError("Please choose a video smaller than 100 MB.");
+        evidenceInput.value = "";
+        return;
+      }
+      if (isImage && upload.size > 10 * 1024 * 1024) {
+        showError("Please choose an image smaller than 10 MB.");
+        evidenceInput.value = "";
+        return;
+      }
+
+      if (isVideo) {
+        const evidenceId = `video-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        try {
+          await saveEvidenceFile(evidenceId, upload);
+          state.draft.evidence = `video-id:${evidenceId}`;
+          saveState(state);
+          render();
+        } catch (error) {
+          console.error("ZamFault video upload failed:", error);
+          showError("The video could not be saved in this browser. Check available device storage and try a smaller video.");
+        } finally {
+          evidenceInput.value = "";
+        }
+        return;
+      }
+
       const reader = new FileReader();
+      reader.onerror = () => {
+        showError("The photo could not be read. Please try another image.");
+        evidenceInput.value = "";
+      };
       reader.onload = () => {
-        state.draft.evidence = reader.result;
-        saveState(state);
-        render();
+        const image = new Image();
+        image.onerror = () => {
+          showError("That photo could not be opened. Please choose another image.");
+          evidenceInput.value = "";
+        };
+        image.onload = () => {
+          const maxSide = 1280;
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          const context = canvas.getContext("2d");
+          if (!context) {
+            showError("Your browser could not process this photo. Please try another browser.");
+            evidenceInput.value = "";
+            return;
+          }
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          state.draft.evidence = canvas.toDataURL("image/jpeg", 0.72);
+          try {
+            saveState(state);
+            render();
+          } catch (error) {
+            console.error("ZamFault photo save failed:", error);
+            showError("The photo could not be saved on this device. Try a smaller photo.");
+          } finally {
+            evidenceInput.value = "";
+          }
+        };
+        image.src = reader.result;
       };
       reader.readAsDataURL(upload);
     });
