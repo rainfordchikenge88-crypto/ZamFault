@@ -1,6 +1,6 @@
 # ZamFault
 
-ZamFault is a mobile-first fault reporting app for Zambia. Users can create accounts, log in, upload profile photos, report issues, track them, and access an admin-only dashboard.
+ZamFault is a mobile-first infrastructure fault reporting app for the University of Zambia (UNZA) campus. Users can create accounts, log in, upload profile photos, report issues, track them, and access an admin-only dashboard.
 
 ## Features
 
