@@ -1,7 +1,7 @@
 {
   "name": "ZamFault",
   "short_name": "ZamFault",
-  "description": "Zambian community fault reporting app for roads, water, power, and waste issues.",
+  "description": "Campus infrastructure fault reporting app for the University of Zambia (UNZA).",
   "lang": "en",
   "start_url": "./",
   "scope": "/",
