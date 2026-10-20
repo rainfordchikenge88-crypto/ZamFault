@@ -125,6 +125,10 @@ state.reports ??= START_REPORTS.map((r) => ({ ...r }));
 state.notifications ??= START_NOTES.map((n) => ({ ...n }));
 state.draft ??= emptyDraft();
 state.userLocation ??= { label: "Lusaka", coords: { latitude: -15.3875, longitude: 28.3228 } };
+// Clean old saved location labels so existing browser data no longer shows the country suffix.
+if (state.userLocation?.label) state.userLocation.label = state.userLocation.label.replace(/,\\s*Zambia\\b/gi, "").trim();
+if (state.draft?.location) state.draft.location = state.draft.location.replace(/,\\s*Zambia\\b/gi, "").trim();
+state.reports = state.reports.map((report) => ({ ...report, location: typeof report.location === "string" ? report.location.replace(/,\\s*Zambia\\b/gi, "").trim() : report.location }));
 state.screen ??= "welcome";
 saveState(state);
 
