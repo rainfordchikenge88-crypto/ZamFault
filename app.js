@@ -115,7 +115,7 @@ function makeDefaultState() {
     uiFilter: "All",
     screen: "welcome",
     installPrompt: null,
-    userLocation: { label: "Lusaka, Zambia", coords: { latitude: -15.3875, longitude: 28.3228 } },
+    userLocation: { label: "Lusaka", coords: { latitude: -15.3875, longitude: 28.3228 } },
   };
 }
 
@@ -124,7 +124,7 @@ state.users ??= DEFAULT_USERS.map((u) => ({ ...u }));
 state.reports ??= START_REPORTS.map((r) => ({ ...r }));
 state.notifications ??= START_NOTES.map((n) => ({ ...n }));
 state.draft ??= emptyDraft();
-state.userLocation ??= { label: "Lusaka, Zambia", coords: { latitude: -15.3875, longitude: 28.3228 } };
+state.userLocation ??= { label: "Lusaka", coords: { latitude: -15.3875, longitude: 28.3228 } };
 state.screen ??= "welcome";
 saveState(state);
 
@@ -249,7 +249,7 @@ const routes = {
     };
     const live = mine.find((r) => r.status === "In progress") || mine[0];
     const installVisible = !window.matchMedia("(display-mode: standalone)").matches;
-    const locationText = state.userLocation?.label || "Lusaka, Zambia";
+    const locationText = state.userLocation?.label || "Lusaka";
     return `<section class="screen has-tabs"><div class="content pad"><div class="dash-head"><div><p class="hello">Hello ${escapeHtml(user?.name || "there")}</p><h1 class="title">Welcome to ZamFault</h1></div><button class="icon-btn" data-go="notifications">${icon("bell", 18)}</button></div><div class="mini-note">📍 Your current location: <b>${escapeHtml(locationText)}</b></div>${live ? `<div class="banner"><span class="dot-live"></span><div><b>Report ${escapeHtml(live.id)} is ${escapeHtml(live.status.toLowerCase())}</b><div class="muted" style="font-size:12px">Updated ${relTime(live.createdAt)}</div></div></div>` : ""}<button class="btn btn-primary" data-go="report">＋ Report a fault</button>${installVisible ? `<button class="btn btn-ghost" id="install-app" style="margin-top:10px">Install app</button>` : ""}<div class="stats"><div class="stat"><b>${counts.reported}</b><span>Reported</span></div><div class="stat"><b>${counts.progress}</b><span>In progress</span></div><div class="stat"><b>${counts.verified}</b><span>Verified</span></div></div><div class="section-h"><h3>Fault categories</h3></div><div class="cats">${CATEGORIES.map((c) => `<button class="cat" data-go="report" data-cat="${c.id}"><i>${icon(c.icon, 22)}</i><span>${c.label}</span></button>`).join("")}</div><div class="section-h"><h3>Recent reports</h3><a class="link" data-go="reports" style="font-size:13px">See all</a></div>${mine.slice(0, 3).map(reportRow).join("")}</div>${tabBar("home")}</section>`;
   },
   report() {
@@ -537,7 +537,7 @@ function bind() {
       render();
     };
     if (!navigator.geolocation) {
-      return apply("Lusaka CBD, Zambia", { lat: -15.3875, lng: 28.3228 });
+      return apply("Lusaka CBD", { lat: -15.3875, lng: 28.3228 });
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -546,7 +546,7 @@ function bind() {
         state.userLocation = { label: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, coords: { latitude: lat, longitude: lng } };
         apply(`${lat.toFixed(4)}, ${lng.toFixed(4)}`, { lat, lng });
       },
-      () => apply("Lusaka CBD, Zambia", { lat: -15.3875, lng: 28.3228 })
+      () => apply("Lusaka CBD", { lat: -15.3875, lng: 28.3228 })
     );
   });
 
@@ -559,7 +559,7 @@ function bind() {
       conf: 78 + Math.floor(Math.random() * 18),
     };
     draft.chosenType = draft.type;
-    if (!draft.location) draft.location = "Lusaka CBD, Zambia";
+    if (!draft.location) draft.location = "Lusaka CBD";
     saveState(state);
     navigate("detect");
   });
@@ -829,7 +829,7 @@ if (navigator.geolocation) {
       saveState(state);
     },
     () => {
-      state.userLocation = { label: "Lusaka, Zambia", coords: { latitude: -15.3875, longitude: 28.3228 } };
+      state.userLocation = { label: "Lusaka", coords: { latitude: -15.3875, longitude: 28.3228 } };
       saveState(state);
     }
   );
